@@ -9,106 +9,6 @@ import tensorflow as tf
 import cv2
 import matplotlib.pyplot as plt
 
-def gaussian1d(sigma, mean, x, ord):
-    x = np.array(x)
-    x_ = x - mean
-    var = sigma**2
-
-    # Gaussian Function
-    g1 = (1/np.sqrt(2*np.pi*var))*(np.exp((-1*x_*x_)/(2*var)))
-
-    if ord == 0:
-        g = g1
-        return g
-    elif ord == 1:
-        g = -g1*((x_)/(var))
-        return g
-    else:
-        g = g1*(((x_*x_) - var)/(var**2))
-        return g
-
-def gaussian2d(sup, scales):
-    var = scales * scales
-    shape = (sup,sup)
-    n,m = [(i - 1)/2 for i in shape]
-    x,y = np.ogrid[-m:m+1,-n:n+1]
-    g = (1/np.sqrt(2*np.pi*var))*np.exp( -(x*x + y*y) / (2*var) )
-    return g
-
-def log2d(sup, scales):
-    var = scales * scales
-    shape = (sup,sup)
-    n,m = [(i - 1)/2 for i in shape]
-    x,y = np.ogrid[-m:m+1,-n:n+1]
-    g = (1/np.sqrt(2*np.pi*var))*np.exp( -(x*x + y*y) / (2*var) )
-    h = g*((x*x + y*y) - var)/(var**2)
-    return h
-
-def makefilter(scale, phasex, phasey, pts, sup):
-
-    gx = gaussian1d(3*scale, 0, pts[0,...], phasex)
-    gy = gaussian1d(scale,   0, pts[1,...], phasey)
-
-    image = gx*gy
-
-    image = np.reshape(image,(sup,sup))
-    return image
-
-def makeLMfilters():
-    sup     = 49
-    scalex  = np.sqrt(2) * np.array([1,2,3])
-    norient = 6
-    nrotinv = 12
-
-    nbar  = len(scalex)*norient
-    nedge = len(scalex)*norient
-    nf    = nbar+nedge+nrotinv
-    F     = np.zeros([sup,sup,nf])
-    hsup  = (sup - 1)/2
-
-    x = [np.arange(-hsup,hsup+1)]
-    y = [np.arange(-hsup,hsup+1)]
-
-    [x,y] = np.meshgrid(x,y)
-
-    orgpts = [x.flatten(), y.flatten()]
-    orgpts = np.array(orgpts)
-
-    count = 0
-    for scale in range(len(scalex)):
-        for orient in range(norient):
-            angle = (np.pi * orient)/norient
-            c = np.cos(angle)
-            s = np.sin(angle)
-            rotpts = [[c+0,-s+0],[s+0,c+0]]
-            rotpts = np.array(rotpts)
-            rotpts = np.dot(rotpts,orgpts)
-            F[:,:,count] = makefilter(scalex[scale], 0, 1, rotpts, sup)
-            F[:,:,count+nedge] = makefilter(scalex[scale], 0, 2, rotpts, sup)
-            count = count + 1
-
-    count = nbar+nedge
-    scales = np.sqrt(2) * np.array([1,2,3,4])
-
-    for i in range(len(scales)):
-        F[:,:,count]   = gaussian2d(sup, scales[i])
-        count = count + 1
-
-    for i in range(len(scales)):
-        F[:,:,count] = log2d(sup, scales[i])
-        count = count + 1
-
-    for i in range(len(scales)):
-        F[:,:,count] = log2d(sup, 3*scales[i])
-        count = count + 1
-
-    return F
-
-# Call the make filter function
-F = makeLMfilters()
-# print (F.shape)
-
-
 # In[ ]:
 
 
@@ -117,37 +17,9 @@ F = makeLMfilters()
 
 
 # In[ ]:
-
-
-'''
-Dataset description
-Images of 150 persons from different angles
-Total images = 19516*5 of size 120*120*48 ====> 48 is the no. of filters
-'''
 import os
-# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-dataset_directory = 'input/'
-dir_list = [None]*12
-dir_list[0] = dataset_directory + 'v1_note4_dark/dark/'
-dir_list[1] = dataset_directory + 'v1_note4_daylight/daylight/'
-dir_list[2] = dataset_directory + 'v1_note4_office/office/'
-dir_list[3] = dataset_directory + 'v1_oppo_dark/dark/'
-dir_list[4] = dataset_directory + 'v1_oppo_daylight/daylight/'
-dir_list[5] = dataset_directory + 'v1_oppo_office/office/'
-dir_list[6] = dataset_directory + 'v2_note4_dark/dark/'
-dir_list[7] = dataset_directory + 'v2_note4_daylight/daylight/'
-dir_list[8] = dataset_directory + 'v2_note4_office/office/'
-dir_list[9] = dataset_directory + 'v2_oppo_dark/dark/'
-dir_list[10] = dataset_directory + 'v2_oppo_daylight/daylight/'
-dir_list[11] = dataset_directory + 'v2_oppo_office/office/'
 from glob import glob
-all_images = []
-for direc in dir_list:
-    # print(len(os.listdir(direc + 'S1/')) + len(os.listdir(direc + 'S2/')))
-    images = glob(direc+'S1/'+'*.png')
-    all_images += images
-    images = glob(direc+'S2/'+'*.png')
-    all_images += images
+all_images = glob('input/*/*/*/*.png')
 
 #till here, we've got a list of names of all images
 #image name: <id_of that_person>_<l/r>_<img_no.>.png
