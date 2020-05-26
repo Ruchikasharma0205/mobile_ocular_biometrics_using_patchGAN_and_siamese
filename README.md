@@ -1,4 +1,4 @@
-# ocular_biometrics_using_MR_filters_and_deep_autoencoders
+# ocular_biometrics_using_patchGAN_and_siamese
 
 The dataset has to be placed inside the "input" folder relative to the directory from where source file is being executed.
 
